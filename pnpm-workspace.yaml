@@ -1,0 +1,6 @@
+packages:
+  - src/shared
+  - src/ingest
+  - src/processor
+  - src/alerting
+  - simulator
