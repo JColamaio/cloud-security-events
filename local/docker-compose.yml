@@ -1,0 +1,34 @@
+services:
+  pubsub-emulator:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    command: gcloud beta emulators pubsub start --host-port=0.0.0.0:8085
+    ports:
+      - "8085:8085"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  pubsub-init:
+    image: curlimages/curl:latest
+    depends_on:
+      pubsub-emulator:
+        condition: service_healthy
+    volumes:
+      - ./init-scripts:/scripts
+    entrypoint: ["/bin/sh", "/scripts/init-pubsub.sh"]
+
+  ingest:
+    build:
+      context: ..
+      dockerfile: src/ingest/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - PUBSUB_EMULATOR_HOST=pubsub-emulator:8085
+      - PUBSUB_PROJECT_ID=local-project
+    depends_on:
+      pubsub-init:
+        condition: service_completed_successfully
