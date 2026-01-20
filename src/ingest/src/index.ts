@@ -1,8 +1,12 @@
 import express from "express";
-import { RawEventSchema } from "@cse/shared";
+import { RawEventSchema, PubSubEmulatorQueue } from "@cse/shared";
+import { EventPublisher } from "./services/publisher.js";
 
 const app = express();
 const port = process.env["PORT"] ?? 3000;
+
+const queue = new PubSubEmulatorQueue();
+const publisher = new EventPublisher(queue);
 
 app.use(express.json());
 
@@ -10,7 +14,7 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.post("/events", (req, res) => {
+app.post("/events", async (req, res) => {
   const result = RawEventSchema.safeParse(req.body);
 
   if (!result.success) {
@@ -18,8 +22,7 @@ app.post("/events", (req, res) => {
     return;
   }
 
-  // TODO: publish to queue
-  console.log("received event:", result.data.source_name);
+  await publisher.publish(result.data);
 
   res.status(202).json({ accepted: true });
 });

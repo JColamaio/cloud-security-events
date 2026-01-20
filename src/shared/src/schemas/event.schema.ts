@@ -57,3 +57,5 @@ export const RawEventSchema = z.object({
   timestamp: z.string().datetime().optional(),
   payload: z.record(z.unknown()),
 });
+
+export type RawEventInput = z.infer<typeof RawEventSchema>;
