@@ -1,6 +1,7 @@
 packages:
   - src/shared
   - src/ingest
+  - src/normalizer
   - src/processor
   - src/alerting
   - simulator
