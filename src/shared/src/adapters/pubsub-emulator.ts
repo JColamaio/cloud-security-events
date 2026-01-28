@@ -4,7 +4,7 @@ import type { MessageQueue, MessageHandler } from "../interfaces/queue.js";
 export class PubSubEmulatorQueue implements MessageQueue {
   private client: PubSub;
 
-  constructor(projectId: string = "local-project") {
+  constructor(projectId = "local-project") {
     this.client = new PubSub({ projectId });
   }
 
@@ -14,20 +14,18 @@ export class PubSubEmulatorQueue implements MessageQueue {
     await topicRef.publishMessage({ data });
   }
 
-  async subscribe<T = unknown>(
-    subscription: string,
-    handler: MessageHandler<T>
-  ): Promise<void> {
+  subscribe<T = unknown>(subscription: string, handler: MessageHandler<T>): void {
     const sub = this.client.subscription(subscription);
 
-    sub.on("message", async (message: Message) => {
-      try {
-        const data = JSON.parse(message.data.toString()) as T;
-        await handler(data);
-        message.ack();
-      } catch {
-        message.nack();
-      }
+    sub.on("message", (message: Message) => {
+      const data = JSON.parse(message.data.toString()) as T;
+      handler(data)
+        .then(() => {
+          message.ack();
+        })
+        .catch(() => {
+          message.nack();
+        });
     });
   }
 
