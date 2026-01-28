@@ -1,10 +1,23 @@
 import { randomUUID } from "node:crypto";
 import type { RawEvent, SecurityEvent, EventType, EventActor, EventTarget } from "@cse/shared";
+import type { GeoIpEnricher } from "../enrichers/geoip.js";
 
 const PIPELINE_VERSION = "1.0.0";
 
+interface NormalizerOptions {
+  geoIpEnricher?: GeoIpEnricher;
+}
+
 export class EventNormalizer {
-  normalize(raw: RawEvent): SecurityEvent {
+  private geoIpEnricher?: GeoIpEnricher;
+
+  constructor(options: NormalizerOptions = {}) {
+    if (options.geoIpEnricher) {
+      this.geoIpEnricher = options.geoIpEnricher;
+    }
+  }
+
+  async normalize(raw: RawEvent): Promise<SecurityEvent> {
     const now = new Date().toISOString();
 
     const event: SecurityEvent = {
@@ -35,6 +48,7 @@ export class EventNormalizer {
     const actor = this.extractActor(raw.payload);
     if (actor) {
       event.actor = actor;
+      await this.enrichActorGeo(event);
     }
 
     const target = this.extractTarget(raw.payload);
@@ -43,6 +57,18 @@ export class EventNormalizer {
     }
 
     return event;
+  }
+
+  private async enrichActorGeo(event: SecurityEvent): Promise<void> {
+    if (!this.geoIpEnricher || !event.actor?.ip) {
+      return;
+    }
+
+    const geo = await this.geoIpEnricher.lookup(event.actor.ip);
+    if (geo) {
+      event.actor.geo = geo;
+      event.pipeline.enrichments_applied.push("geoip");
+    }
   }
 
   private inferEventType(raw: RawEvent): EventType {
