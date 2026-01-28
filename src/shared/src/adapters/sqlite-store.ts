@@ -1,11 +1,11 @@
 import Database from "better-sqlite3";
 import type { EventStore, EventFilter } from "../interfaces/store.js";
-import type { SecurityEvent } from "../types/events.js";
+import type { SecurityEvent, EventActor, EventTarget } from "../types/events.js";
 
 export class SQLiteStore implements EventStore {
   private db: Database.Database;
 
-  constructor(dbPath: string = ":memory:") {
+  constructor(dbPath = ":memory:") {
     this.db = new Database(dbPath);
     this.init();
   }
@@ -40,7 +40,7 @@ export class SQLiteStore implements EventStore {
     `);
   }
 
-  async save(event: SecurityEvent): Promise<void> {
+  save(event: SecurityEvent): Promise<void> {
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO events (
         id, timestamp, ingested_at, event_type, event_action,
@@ -64,9 +64,11 @@ export class SQLiteStore implements EventStore {
       JSON.stringify(event.metadata),
       JSON.stringify(event.pipeline)
     );
+
+    return Promise.resolve();
   }
 
-  async query(filter: EventFilter): Promise<SecurityEvent[]> {
+  query(filter: EventFilter): Promise<SecurityEvent[]> {
     const conditions: string[] = [];
     const params: unknown[] = [];
 
@@ -99,29 +101,42 @@ export class SQLiteStore implements EventStore {
 
     const rows = this.db.prepare(sql).all(...params) as EventRow[];
 
-    return rows.map((row) => this.rowToEvent(row));
+    return Promise.resolve(rows.map((row) => this.rowToEvent(row)));
   }
 
-  async close(): Promise<void> {
+  close(): Promise<void> {
     this.db.close();
+    return Promise.resolve();
   }
 
   private rowToEvent(row: EventRow): SecurityEvent {
-    return {
+    const event_category = JSON.parse(row.event_category) as SecurityEvent["event_category"];
+    const source = JSON.parse(row.source) as SecurityEvent["source"];
+    const metadata = JSON.parse(row.metadata) as SecurityEvent["metadata"];
+    const pipeline = JSON.parse(row.pipeline) as SecurityEvent["pipeline"];
+
+    const event: SecurityEvent = {
       id: row.id,
       timestamp: row.timestamp,
       ingested_at: row.ingested_at,
       event_type: row.event_type as SecurityEvent["event_type"],
       event_action: row.event_action,
       event_severity: row.event_severity as SecurityEvent["event_severity"],
-      event_category: JSON.parse(row.event_category),
-      source: JSON.parse(row.source),
-      actor: row.actor ? JSON.parse(row.actor) : undefined,
-      target: row.target ? JSON.parse(row.target) : undefined,
+      event_category,
+      source,
       outcome: row.outcome as SecurityEvent["outcome"],
-      metadata: JSON.parse(row.metadata),
-      pipeline: JSON.parse(row.pipeline),
+      metadata,
+      pipeline,
     };
+
+    if (row.actor) {
+      event.actor = JSON.parse(row.actor) as EventActor;
+    }
+    if (row.target) {
+      event.target = JSON.parse(row.target) as EventTarget;
+    }
+
+    return event;
   }
 }
 
