@@ -5,8 +5,8 @@ const RAW_EVENTS_SUBSCRIPTION = process.env["RAW_EVENTS_SUBSCRIPTION"] ?? "raw-e
 export class EventSubscriber {
   constructor(private queue: MessageQueue) {}
 
-  async start(handler: (event: RawEvent) => Promise<void>): Promise<void> {
-    await this.queue.subscribe<RawEvent>(RAW_EVENTS_SUBSCRIPTION, handler);
+  start(handler: (event: RawEvent) => Promise<void>): void {
+    this.queue.subscribe<RawEvent>(RAW_EVENTS_SUBSCRIPTION, handler);
   }
 
   async close(): Promise<void> {
