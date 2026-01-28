@@ -16,3 +16,11 @@ Thumbs.db
 # Project docs (not for repo)
 CLAUDE.md
 cloud-security-event-pipeline-spec.md
+
+# Terraform
+*.tfvars
+!*.tfvars.example
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
