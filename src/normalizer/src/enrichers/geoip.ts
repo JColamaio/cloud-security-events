@@ -11,21 +11,65 @@ interface IpRange {
 }
 
 const KNOWN_RANGES: IpRange[] = [
-  { start: ipToNumber("190.0.0.0"), end: ipToNumber("190.255.255.255"), location: { country: "AR", city: "Buenos Aires" } },
-  { start: ipToNumber("181.0.0.0"), end: ipToNumber("181.255.255.255"), location: { country: "AR", city: "Buenos Aires" } },
-  { start: ipToNumber("8.0.0.0"), end: ipToNumber("8.255.255.255"), location: { country: "US", city: "Los Angeles" } },
-  { start: ipToNumber("52.0.0.0"), end: ipToNumber("52.255.255.255"), location: { country: "US", city: "Seattle" } },
-  { start: ipToNumber("104.0.0.0"), end: ipToNumber("104.255.255.255"), location: { country: "US", city: "San Francisco" } },
-  { start: ipToNumber("185.0.0.0"), end: ipToNumber("185.255.255.255"), location: { country: "NL", city: "Amsterdam" } },
-  { start: ipToNumber("91.0.0.0"), end: ipToNumber("91.255.255.255"), location: { country: "RU", city: "Moscow" } },
-  { start: ipToNumber("31.0.0.0"), end: ipToNumber("31.255.255.255"), location: { country: "RU", city: "Saint Petersburg" } },
-  { start: ipToNumber("103.0.0.0"), end: ipToNumber("103.255.255.255"), location: { country: "CN", city: "Beijing" } },
-  { start: ipToNumber("202.0.0.0"), end: ipToNumber("202.255.255.255"), location: { country: "JP", city: "Tokyo" } },
+  {
+    start: ipToNumber("190.0.0.0"),
+    end: ipToNumber("190.255.255.255"),
+    location: { country: "AR", city: "Buenos Aires" },
+  },
+  {
+    start: ipToNumber("181.0.0.0"),
+    end: ipToNumber("181.255.255.255"),
+    location: { country: "AR", city: "Buenos Aires" },
+  },
+  {
+    start: ipToNumber("8.0.0.0"),
+    end: ipToNumber("8.255.255.255"),
+    location: { country: "US", city: "Los Angeles" },
+  },
+  {
+    start: ipToNumber("52.0.0.0"),
+    end: ipToNumber("52.255.255.255"),
+    location: { country: "US", city: "Seattle" },
+  },
+  {
+    start: ipToNumber("104.0.0.0"),
+    end: ipToNumber("104.255.255.255"),
+    location: { country: "US", city: "San Francisco" },
+  },
+  {
+    start: ipToNumber("185.0.0.0"),
+    end: ipToNumber("185.255.255.255"),
+    location: { country: "NL", city: "Amsterdam" },
+  },
+  {
+    start: ipToNumber("91.0.0.0"),
+    end: ipToNumber("91.255.255.255"),
+    location: { country: "RU", city: "Moscow" },
+  },
+  {
+    start: ipToNumber("31.0.0.0"),
+    end: ipToNumber("31.255.255.255"),
+    location: { country: "RU", city: "Saint Petersburg" },
+  },
+  {
+    start: ipToNumber("103.0.0.0"),
+    end: ipToNumber("103.255.255.255"),
+    location: { country: "CN", city: "Beijing" },
+  },
+  {
+    start: ipToNumber("202.0.0.0"),
+    end: ipToNumber("202.255.255.255"),
+    location: { country: "JP", city: "Tokyo" },
+  },
 ];
 
 function ipToNumber(ip: string): number {
   const parts = ip.split(".").map(Number);
-  return ((parts[0]! << 24) | (parts[1]! << 16) | (parts[2]! << 8) | parts[3]!) >>> 0;
+  const p0 = parts[0] ?? 0;
+  const p1 = parts[1] ?? 0;
+  const p2 = parts[2] ?? 0;
+  const p3 = parts[3] ?? 0;
+  return ((p0 << 24) | (p1 << 16) | (p2 << 8) | p3) >>> 0;
 }
 
 function isPrivateIp(ip: string): boolean {
@@ -40,14 +84,14 @@ function isPrivateIp(ip: string): boolean {
 }
 
 export class MockGeoIpEnricher implements GeoIpEnricher {
-  async lookup(ip: string): Promise<GeoLocation | undefined> {
+  lookup(ip: string): Promise<GeoLocation | undefined> {
     if (!ip || isPrivateIp(ip)) {
-      return undefined;
+      return Promise.resolve(undefined);
     }
 
     const num = ipToNumber(ip);
     const match = KNOWN_RANGES.find((r) => num >= r.start && num <= r.end);
 
-    return match?.location;
+    return Promise.resolve(match?.location);
   }
 }
