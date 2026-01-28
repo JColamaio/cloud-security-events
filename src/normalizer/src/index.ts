@@ -25,8 +25,14 @@ async function start() {
     const securityEvent = await normalizer.normalize(rawEvent);
     await publisher.publish(securityEvent);
 
-    const enrichments = securityEvent.pipeline.enrichments_applied;
-    const enrichmentInfo = enrichments.length > 0 ? ` [${enrichments.join(", ")}]` : "";
+    const enrichmentParts: string[] = [];
+    if (securityEvent.pipeline.enrichments_applied.includes("geoip") && securityEvent.actor?.geo) {
+      const { ip } = securityEvent.actor;
+      const { country } = securityEvent.actor.geo;
+      enrichmentParts.push(`geoip: ${ip} -> ${country}`);
+    }
+
+    const enrichmentInfo = enrichmentParts.length > 0 ? ` [${enrichmentParts.join(", ")}]` : "";
     console.log(
       `Processed event ${securityEvent.id} (${securityEvent.event_type})${enrichmentInfo}`
     );
