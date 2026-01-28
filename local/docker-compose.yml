@@ -50,5 +50,19 @@ services:
       pubsub-init:
         condition: service_completed_successfully
 
+  alerting:
+    build:
+      context: ..
+      dockerfile: src/alerting/Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - PUBSUB_EMULATOR_HOST=pubsub-emulator:8085
+      - PUBSUB_PROJECT_ID=local-project
+    depends_on:
+      pubsub-init:
+        condition: service_completed_successfully
+
 volumes:
   normalizer-data:
