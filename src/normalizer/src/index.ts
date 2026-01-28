@@ -27,27 +27,30 @@ app.get("/events", async (req, res) => {
     limit: req.query["limit"] ? Number(req.query["limit"]) : 50,
   };
 
-  if (req.query["type"]) {
-    filter.event_type = req.query["type"] as string;
+  const typeParam = req.query["type"];
+  if (typeof typeParam === "string") {
+    filter.event_type = typeParam;
   }
-  if (req.query["severity"]) {
-    filter.severity = req.query["severity"] as string;
+
+  const severityParam = req.query["severity"];
+  if (typeof severityParam === "string") {
+    filter.severity = severityParam;
   }
 
   const events = await store.query(filter);
   res.json(events);
 });
 
-async function start() {
-  await subscriber.start(async (rawEvent) => {
+function start() {
+  subscriber.start(async (rawEvent) => {
     const securityEvent = await normalizer.normalize(rawEvent);
     await store.save(securityEvent);
     await publisher.publish(securityEvent);
 
     const enrichmentParts: string[] = [];
     if (securityEvent.pipeline.enrichments_applied.includes("geoip") && securityEvent.actor?.geo) {
-      const { ip } = securityEvent.actor;
-      const { country } = securityEvent.actor.geo;
+      const ip = securityEvent.actor.ip ?? "unknown";
+      const country = securityEvent.actor.geo.country ?? "unknown";
       enrichmentParts.push(`geoip: ${ip} -> ${country}`);
     }
 
@@ -62,7 +65,14 @@ async function start() {
   });
 }
 
-start().catch((err) => {
-  console.error("Failed to start normalizer:", err);
-  process.exit(1);
-});
+function shutdown() {
+  console.log("Shutting down normalizer service...");
+  store.close().catch(console.error);
+  subscriber.close().catch(console.error);
+  process.exit(0);
+}
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
+
+start();
