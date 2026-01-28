@@ -3,6 +3,7 @@ import { PubSubEmulatorQueue } from "@cse/shared";
 import { EventSubscriber } from "./services/subscriber.js";
 import { EventNormalizer } from "./services/normalizer.js";
 import { ProcessedEventPublisher } from "./services/publisher.js";
+import { MockGeoIpEnricher } from "./enrichers/geoip.js";
 
 const app = express();
 const port = process.env["PORT"] ?? 3001;
@@ -11,7 +12,8 @@ const subscriberQueue = new PubSubEmulatorQueue();
 const publisherQueue = new PubSubEmulatorQueue();
 
 const subscriber = new EventSubscriber(subscriberQueue);
-const normalizer = new EventNormalizer();
+const geoIpEnricher = new MockGeoIpEnricher();
+const normalizer = new EventNormalizer({ geoIpEnricher });
 const publisher = new ProcessedEventPublisher(publisherQueue);
 
 app.get("/health", (_req, res) => {
@@ -20,7 +22,7 @@ app.get("/health", (_req, res) => {
 
 async function start() {
   await subscriber.start(async (rawEvent) => {
-    const securityEvent = normalizer.normalize(rawEvent);
+    const securityEvent = await normalizer.normalize(rawEvent);
     await publisher.publish(securityEvent);
     console.log(`Processed event ${securityEvent.id} (${securityEvent.event_type})`);
   });
