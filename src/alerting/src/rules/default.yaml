@@ -1,0 +1,90 @@
+rules:
+  # Aggregation-based rules
+
+  - id: brute-force-login
+    name: Brute Force Login Attempt
+    description: Multiple failed login attempts from the same IP address
+    enabled: true
+    severity: high
+    conditions:
+      event_type: authentication
+      event_action: login_failure
+      aggregation:
+        field: actor.ip
+        count_threshold: 5
+        time_window_seconds: 300
+    actions:
+      - type: console
+        config: {}
+
+  # Single-event rules for high-value actions
+
+  - id: privilege-escalation
+    name: Privilege Escalation
+    description: User granted elevated privileges
+    enabled: true
+    severity: high
+    conditions:
+      event_type: audit
+      event_action:
+        - role_admin_granted
+        - permission_elevated
+    actions:
+      - type: console
+        config: {}
+
+  - id: credential-created
+    name: Credential Created
+    description: New API key or service account credential created
+    enabled: true
+    severity: medium
+    conditions:
+      event_type: audit
+      event_action:
+        - api_key_created
+        - service_account_key_created
+    actions:
+      - type: console
+        config: {}
+
+  - id: user-deleted
+    name: User Account Deleted
+    description: User account was removed from the system
+    enabled: true
+    severity: medium
+    conditions:
+      event_type: audit
+      event_action: user_deleted
+    actions:
+      - type: console
+        config: {}
+
+  - id: shadow-file-access
+    name: Shadow File Access
+    description: Read or write access to /etc/shadow
+    enabled: true
+    severity: critical
+    conditions:
+      event_type: file
+      field_conditions:
+        - field: target.name
+          operator: eq
+          value: "/etc/shadow"
+    actions:
+      - type: console
+        config: {}
+
+  - id: ssh-private-key-access
+    name: SSH Private Key Access
+    description: Access to SSH private key files
+    enabled: true
+    severity: critical
+    conditions:
+      event_type: file
+      field_conditions:
+        - field: target.name
+          operator: contains
+          value: ".ssh/id_rsa"
+    actions:
+      - type: console
+        config: {}
