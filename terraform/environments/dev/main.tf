@@ -14,6 +14,11 @@ provider "google" {
   region  = var.region
 }
 
+# Obtenemos el project number (necesario para algunos permisos)
+data "google_project" "current" {
+  project_id = var.project_id
+}
+
 # Habilitar APIs necesarias
 # Esto tarda unos segundos la primera vez
 resource "google_project_service" "apis" {
@@ -42,8 +47,10 @@ resource "google_artifact_registry_repository" "containers" {
 
 # Pub/Sub (topics y subscriptions)
 module "pubsub" {
-  source      = "../../modules/pubsub"
-  environment = var.environment
+  source = "../../modules/pubsub"
+
+  environment    = var.environment
+  project_number = data.google_project.current.number
 
   depends_on = [google_project_service.apis]
 }
@@ -63,6 +70,7 @@ module "bigquery" {
 module "iam" {
   source = "../../modules/iam"
 
+  project_id  = var.project_id
   environment = var.environment
 
   raw_events_topic              = module.pubsub.raw_events_topic_name

@@ -1,5 +1,10 @@
 # Topics y subscriptions para el pipeline de eventos
 # Flujo: ingest -> raw-events -> normalizer -> processed-events -> alerting
+#
+# TODO: para producción considerar:
+# - Push subscriptions en vez de pull (menos latencia)
+# - Message ordering si el orden importa
+# - Schema validation en los topics
 
 # Topic para eventos crudos (output de ingest)
 resource "google_pubsub_topic" "raw_events" {
@@ -63,6 +68,13 @@ resource "google_pubsub_subscription" "processed_events" {
 # Útil para debugging y re-procesamiento manual
 resource "google_pubsub_topic" "dead_letter" {
   name = "dead-letter-${var.environment}"
+}
+
+# Pub/Sub necesita permisos para publicar al DLQ
+resource "google_pubsub_topic_iam_member" "dead_letter_publisher" {
+  topic  = google_pubsub_topic.dead_letter.name
+  role   = "roles/pubsub.publisher"
+  member = "serviceAccount:service-${var.project_number}@gcp-sa-pubsub.iam.gserviceaccount.com"
 }
 
 # Subscription para inspeccionar dead letters

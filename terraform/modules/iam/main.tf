@@ -1,5 +1,10 @@
 # Service accounts para cada servicio
 # Principio: least privilege - cada SA tiene solo los permisos que necesita
+#
+# TODO: para producción considerar:
+# - Workload Identity en vez de SA keys
+# - Audit logging de accesos
+# - Rotación de credenciales
 
 # SA para ingest service
 # Permisos: publicar a Pub/Sub
@@ -50,6 +55,13 @@ resource "google_bigquery_dataset_iam_member" "normalizer_writer" {
   dataset_id = var.bigquery_dataset_id
   role       = "roles/bigquery.dataEditor"
   member     = "serviceAccount:${google_service_account.normalizer.email}"
+}
+
+# Necesario para ejecutar queries/inserts
+resource "google_project_iam_member" "normalizer_bq_user" {
+  project = var.project_id
+  role    = "roles/bigquery.jobUser"
+  member  = "serviceAccount:${google_service_account.normalizer.email}"
 }
 
 # Permisos de Pub/Sub para alerting

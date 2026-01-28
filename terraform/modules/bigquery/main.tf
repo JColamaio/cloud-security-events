@@ -1,5 +1,10 @@
 # Dataset y tabla para almacenamiento de eventos
 # BigQuery es ideal para analytics sobre eventos de seguridad
+#
+# TODO: para producción considerar:
+# - CMEK (Customer Managed Encryption Keys)
+# - Column-level security para datos sensibles
+# - Authorized views para acceso controlado
 
 resource "google_bigquery_dataset" "events" {
   dataset_id = "security_events_${var.environment}"

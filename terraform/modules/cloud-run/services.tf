@@ -1,5 +1,11 @@
 # Cloud Run services para el pipeline
 # Cada servicio corre en su propio container con su propia SA
+#
+# TODO: para producción considerar:
+# - VPC connector para acceso privado
+# - Cloud Armor para protección DDoS
+# - Custom domains con certificados managed
+# - Min instances > 0 para evitar cold starts
 
 # Ingest service - recibe eventos HTTP y los publica a Pub/Sub
 resource "google_cloud_run_v2_service" "ingest" {
@@ -142,4 +148,3 @@ resource "google_cloud_run_v2_service" "normalizer" {
     service     = "normalizer"
   }
 }
-
