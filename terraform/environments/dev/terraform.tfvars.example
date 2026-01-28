@@ -1,0 +1,6 @@
+# Copiar a terraform.tfvars y completar con tu project ID
+# terraform.tfvars está en .gitignore
+
+project_id = "tu-project-id-aqui"
+region     = "us-central1"
+image_tag  = "latest"
