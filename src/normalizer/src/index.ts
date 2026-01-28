@@ -24,7 +24,12 @@ async function start() {
   await subscriber.start(async (rawEvent) => {
     const securityEvent = await normalizer.normalize(rawEvent);
     await publisher.publish(securityEvent);
-    console.log(`Processed event ${securityEvent.id} (${securityEvent.event_type})`);
+
+    const enrichments = securityEvent.pipeline.enrichments_applied;
+    const enrichmentInfo = enrichments.length > 0 ? ` [${enrichments.join(", ")}]` : "";
+    console.log(
+      `Processed event ${securityEvent.id} (${securityEvent.event_type})${enrichmentInfo}`
+    );
   });
 
   app.listen(port, () => {
