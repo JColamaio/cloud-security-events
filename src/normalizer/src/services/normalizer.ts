@@ -64,16 +64,21 @@ export class EventNormalizer {
       return;
     }
 
-    const geo = await this.geoIpEnricher.lookup(event.actor.ip);
-    if (geo) {
-      event.actor.geo = geo;
-      event.pipeline.enrichments_applied.push("geoip");
+    try {
+      const geo = await this.geoIpEnricher.lookup(event.actor.ip);
+      if (geo) {
+        event.actor.geo = geo;
+        event.pipeline.enrichments_applied.push("geoip");
+      }
+    } catch (error) {
+      console.error(`GeoIP lookup failed for ${event.actor.ip}:`, error);
     }
   }
 
   private inferEventType(raw: RawEvent): EventType {
     const payload = raw.payload;
-    const action = String(payload["action"] ?? payload["eventType"] ?? "").toLowerCase();
+    const actionValue = payload["action"] ?? payload["eventType"] ?? "";
+    const action = (typeof actionValue === "string" ? actionValue : "").toLowerCase();
 
     if (action.includes("login") || action.includes("auth") || action.includes("signin")) {
       return "authentication";
@@ -93,7 +98,8 @@ export class EventNormalizer {
 
   private extractAction(raw: RawEvent): string {
     const payload = raw.payload;
-    return String(payload["action"] ?? payload["eventType"] ?? payload["event"] ?? "unknown");
+    const value = payload["action"] ?? payload["eventType"] ?? payload["event"] ?? "unknown";
+    return typeof value === "string" ? value : "unknown";
   }
 
   private extractActor(payload: Record<string, unknown>): EventActor | undefined {
@@ -106,9 +112,9 @@ export class EventNormalizer {
     }
 
     const actor: EventActor = {};
-    if (user) actor.user = String(user);
-    if (email) actor.email = String(email);
-    if (ip) actor.ip = String(ip);
+    if (typeof user === "string") actor.user = user;
+    if (typeof email === "string") actor.email = email;
+    if (typeof ip === "string") actor.ip = ip;
 
     return actor;
   }
@@ -124,10 +130,10 @@ export class EventNormalizer {
     }
 
     const target: EventTarget = {
-      type: targetType ? String(targetType) : "unknown",
+      type: typeof targetType === "string" ? targetType : "unknown",
     };
-    if (name) target.name = String(name);
-    if (ip) target.ip = String(ip);
+    if (typeof name === "string") target.name = name;
+    if (typeof ip === "string") target.ip = ip;
     if (typeof port === "number") target.port = port;
 
     return target;
