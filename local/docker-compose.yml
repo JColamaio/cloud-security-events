@@ -43,6 +43,12 @@ services:
       - PORT=3001
       - PUBSUB_EMULATOR_HOST=pubsub-emulator:8085
       - PUBSUB_PROJECT_ID=local-project
+      - SQLITE_DB_PATH=/data/events.db
+    volumes:
+      - normalizer-data:/data
     depends_on:
       pubsub-init:
         condition: service_completed_successfully
+
+volumes:
+  normalizer-data:
