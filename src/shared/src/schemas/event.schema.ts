@@ -58,4 +58,4 @@ export const RawEventSchema = z.object({
   payload: z.record(z.unknown()),
 });
 
-export type RawEventInput = z.infer<typeof RawEventSchema>;
+export type RawEvent = z.infer<typeof RawEventSchema>;

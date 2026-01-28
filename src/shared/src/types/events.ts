@@ -54,10 +54,3 @@ export interface SecurityEvent {
   metadata: Record<string, unknown>;
   pipeline: PipelineMetadata;
 }
-
-export interface RawEvent {
-  source_type: string;
-  source_name: string;
-  timestamp?: string;
-  payload: Record<string, unknown>;
-}
