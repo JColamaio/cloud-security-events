@@ -1,5 +1,5 @@
 import express from "express";
-import { PubSubEmulatorQueue } from "@cse/shared";
+import { PubSubEmulatorQueue, SQLiteStore } from "@cse/shared";
 import { EventSubscriber } from "./services/subscriber.js";
 import { EventNormalizer } from "./services/normalizer.js";
 import { ProcessedEventPublisher } from "./services/publisher.js";
@@ -10,6 +10,8 @@ const port = process.env["PORT"] ?? 3001;
 
 const subscriberQueue = new PubSubEmulatorQueue();
 const publisherQueue = new PubSubEmulatorQueue();
+const dbPath = process.env["SQLITE_DB_PATH"] ?? "/data/events.db";
+const store = new SQLiteStore(dbPath);
 
 const subscriber = new EventSubscriber(subscriberQueue);
 const geoIpEnricher = new MockGeoIpEnricher();
@@ -20,9 +22,26 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.get("/events", async (req, res) => {
+  const filter: Parameters<typeof store.query>[0] = {
+    limit: req.query["limit"] ? Number(req.query["limit"]) : 50,
+  };
+
+  if (req.query["type"]) {
+    filter.event_type = req.query["type"] as string;
+  }
+  if (req.query["severity"]) {
+    filter.severity = req.query["severity"] as string;
+  }
+
+  const events = await store.query(filter);
+  res.json(events);
+});
+
 async function start() {
   await subscriber.start(async (rawEvent) => {
     const securityEvent = await normalizer.normalize(rawEvent);
+    await store.save(securityEvent);
     await publisher.publish(securityEvent);
 
     const enrichmentParts: string[] = [];
